@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Group - ShareAI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1 class="neon-text">Create Group</h1>
+    <form id="groupForm">
+        <input type="text" name="aiService" placeholder="AI Service" required><br>
+        <input type="number" name="totalCost" placeholder="Total Cost" required><br>
+        <input type="number" name="maxMembers" placeholder="Max Members" required><br>
+        <button type="submit" class="btn-primary">Create</button>
+    </form>
+    <div id="invite" style="display:none"></div>
+    <script>
+    document.getElementById('groupForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const form=e.target;
+        const res=await fetch('../api/create_group.php',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                aiService:form.aiService.value,
+                totalCost:form.totalCost.value,
+                maxMembers:form.maxMembers.value
+            })
+        });
+        const data=await res.json();
+        if(data.status==='ok'){
+            document.getElementById('invite').style.display='block';
+            document.getElementById('invite').innerText='Invite code:'+data.inviteCode;
+        }else{alert(data.error);}
+    });
+    </script>
+</body>
+</html>

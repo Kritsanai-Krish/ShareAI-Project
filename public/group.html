@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Chat - ShareAI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1 class="neon-text" id="title">Group</h1>
+    <div id="chat" style="height:300px;overflow:auto;border:1px solid #555"></div>
+    <form id="msgForm">
+        <input type="text" name="content" placeholder="Message" required>
+        <button type="submit" class="btn-primary">Send</button>
+    </form>
+    <button id="credBtn" style="display:none">Show Credentials</button>
+    <pre id="creds"></pre>
+    <script>
+    const url = new URL(location.href);
+    const gid = url.searchParams.get('g');
+    async function loadTitle(){
+        const res = await fetch('../api/get_dashboard.php');
+        const data = await res.json();
+        const group = data.groups.find(x=>x.group._id==gid);
+        document.getElementById('title').innerText=group.group.aiService;
+        if(group.payment.status==='Paid') document.getElementById('credBtn').style.display='block';
+    }
+
+    async function poll(since){
+        const res=await fetch(`../api/get_messages.php?groupId=${gid}&since=${since||''}`);
+        const data=await res.json();
+        data.messages.forEach(m=>{
+            const div=document.createElement('div');
+            div.textContent=`${m.userId}: ${m.content}`;
+            document.getElementById('chat').appendChild(div);
+        });
+        if(data.messages.length>0) since=data.messages[data.messages.length-1].timestamp;
+        setTimeout(()=>poll(since),1000);
+    }
+
+    document.getElementById('msgForm').addEventListener('submit',async e=>{
+        e.preventDefault();
+        const form=e.target;
+        await fetch('../api/send_message.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({groupId:gid,content:form.content.value})});
+        form.content.value='';
+    });
+
+    document.getElementById('credBtn').onclick=async()=>{
+        const res=await fetch(`../api/get_credentials.php?groupId=${gid}`);
+        const data=await res.json();
+        if(data.username) document.getElementById('creds').textContent=`Username: ${data.username}\nPassword: ${data.password}`;
+        else alert(data.error);
+    };
+
+    loadTitle();
+    poll();
+    </script>
+</body>
+</html>
